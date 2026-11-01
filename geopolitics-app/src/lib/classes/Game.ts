@@ -89,6 +89,9 @@ export class Game {
   get winnerId(): string | null { return this._winnerId; }
   get pendingReinforcements(): number { return this._pendingReinforcements; }
   get battleInProgress(): boolean { return this._battle !== null; }
+    get currentBattle(): Battle | null {
+    return this._battle ? { ...this._battle } : null;
+  }
   get attackUsed(): boolean { return this._attackUsed; }
   get allCountries(): Country[] { return [...this.countries]; }
   get allPlayers(): Player[] { return [...this.players]; }

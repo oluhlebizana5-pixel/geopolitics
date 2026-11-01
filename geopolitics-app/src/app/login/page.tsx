@@ -18,7 +18,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await logIn(email, password);
-      router.push("/test-firebase");
+      router.push("/");
     } catch (err) {
       setError(friendlyError(err));
     } finally {

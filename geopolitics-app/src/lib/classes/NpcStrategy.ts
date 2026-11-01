@@ -166,6 +166,8 @@ export class NpcStrategy {
   // ---------- A whole NPC turn, one visible step at a time ----------
   // The UI loops over this generator and waits between steps.
   // Fast-forward = shorter wait, but every event is still shown.
+  // It is safe to call again on a game restored from a save made in the middle
+  // of a turn: it carries on from wherever that turn had got to.
   *playTurn(game: Game): Generator<NpcEvent> {
     const me = game.currentPlayer;
     const ev = (type: NpcEventType, message: string, extra: Partial<NpcEvent> = {}): NpcEvent => ({
@@ -176,64 +178,79 @@ export class NpcStrategy {
       ...extra,
     });
 
-    // 1. Reinforcements (round 2 onward)
+    // 1. Reinforcements (round 2 onward). Nothing to do if already placed.
     const reinforce = this.planReinforcements(game, me.id);
     if (reinforce) {
       game.allocateReinforcements(reinforce.code, reinforce.amount);
       yield ev("reinforce", reinforce.reason, { countryCode: reinforce.code, amount: reinforce.amount });
     }
 
-    // 2. Attack (one attack per turn)
-    const choice = this.chooseAttack(game, me.id);
-    if (!choice) {
-      yield ev(
-        "skip",
-        `No attack worth making: nothing reaches ${Math.round(this.profile.minWinChance * 100)}% win chance, so I am saving my soldiers.`
-      );
-    } else {
-      yield ev("attack_start", choice.reason, {
-        attackerCode: choice.attackerCode,
-        defenderCode: choice.defenderCode,
-        winChance: choice.winChance,
-      });
+    // 2. Attack (one attack per turn).
+    //    Resume a saved attack in progress, or skip if this turn's attack is already over.
+    const saved = game.currentBattle;
+    if (saved || !game.attackUsed) {
+      const choice = saved
+        ? {
+            attackerCode: saved.attackerCode,
+            defenderCode: saved.defenderCode,
+            winChance: this.winChance(
+              game.getCountry(saved.attackerCode).soldiers,
+              game.getCountry(saved.defenderCode).soldiers
+            ),
+            reason: `Resuming the attack on ${game.getCountry(saved.defenderCode).name}.`,
+          }
+        : this.chooseAttack(game, me.id);
 
-      while (true) {
-        const result = game.attack(choice.attackerCode, choice.defenderCode);
-        const a = game.getCountry(choice.attackerCode);
-        const d = game.getCountry(choice.defenderCode);
+      if (!choice) {
         yield ev(
-          "battle_round",
-          `Dice round: ${result.round.attackerLosses} soldier(s) lost by ${a.name}, ${result.round.defenderLosses} lost by the defender.`,
-          { attackerCode: choice.attackerCode, defenderCode: choice.defenderCode, result }
+          "skip",
+          `No attack worth making: nothing reaches ${Math.round(this.profile.minWinChance * 100)}% win chance, so I am saving my soldiers.`
         );
+      } else {
+        yield ev("attack_start", choice.reason, {
+          attackerCode: choice.attackerCode,
+          defenderCode: choice.defenderCode,
+          winChance: choice.winChance,
+        });
 
-        if (game.status === "finished") {
-          yield ev("victory", `${me.name} has conquered the world!`);
-          return;
-        }
+        while (true) {
+          const result = game.attack(choice.attackerCode, choice.defenderCode);
+          const a = game.getCountry(choice.attackerCode);
+          const d = game.getCountry(choice.defenderCode);
+          yield ev(
+            "battle_round",
+            `Dice round: ${result.round.attackerLosses} soldier(s) lost by ${a.name}, ${result.round.defenderLosses} lost by the defender.`,
+            { attackerCode: choice.attackerCode, defenderCode: choice.defenderCode, result }
+          );
 
-        if (result.outcome === "conquered") {
-          let msg = `${me.name} conquered ${d.name} and gained ${result.soldiersGained} soldiers there.`;
-          if (result.eliminatedPlayerId) msg += ` ${game.getPlayer(result.eliminatedPlayerId).name} is eliminated.`;
-          yield ev("conquered", msg, { defenderCode: choice.defenderCode, result });
-          break;
-        }
-        if (result.outcome === "attacker_exhausted") {
-          yield ev("stop_attack", `Attack over: ${a.name} is down to 1 soldier and cannot continue.`, {
-            attackerCode: choice.attackerCode,
-            defenderCode: choice.defenderCode,
-          });
-          break;
-        }
+          if (game.status === "finished") {
+            yield ev("victory", `${me.name} has conquered the world!`);
+            return;
+          }
 
-        const decision = this.shouldContinue(game, choice.attackerCode, choice.defenderCode);
-        if (!decision.continue) {
-          yield ev("stop_attack", decision.reason, {
-            attackerCode: choice.attackerCode,
-            defenderCode: choice.defenderCode,
-            winChance: decision.winChance,
-          });
-          break;
+          if (result.outcome === "conquered") {
+            let msg = `${me.name} conquered ${d.name} and gained ${result.soldiersGained} soldiers there.`;
+            if (result.eliminatedPlayerId) msg += ` ${game.getPlayer(result.eliminatedPlayerId).name} is eliminated.`;
+            yield ev("conquered", msg, { defenderCode: choice.defenderCode, result });
+            break;
+          }
+          if (result.outcome === "attacker_exhausted") {
+            yield ev("stop_attack", `Attack over: ${a.name} is down to 1 soldier and cannot continue.`, {
+              attackerCode: choice.attackerCode,
+              defenderCode: choice.defenderCode,
+            });
+            break;
+          }
+
+          const decision = this.shouldContinue(game, choice.attackerCode, choice.defenderCode);
+          if (!decision.continue) {
+            yield ev("stop_attack", decision.reason, {
+              attackerCode: choice.attackerCode,
+              defenderCode: choice.defenderCode,
+              winChance: decision.winChance,
+            });
+            break;
+          }
         }
       }
     }

@@ -1,66 +1,92 @@
-export default function Home() {
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/lib/AuthContext";
+import { GameSummary, friendlyError, listMyGames, listRecentGames } from "@/lib/firebaseService";
+
+function GameList({ games, empty }: { games: GameSummary[]; empty: string }) {
+  if (games.length === 0) return <p className="text-sm text-slate-400">{empty}</p>;
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <img
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <ul className="space-y-2">
+      {games.map((g) => (
+        <li key={g.id}>
+          <Link
+            href={`/game/${g.id}`}
+            className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 p-3 hover:border-slate-500"
+          >
+            <span>
+              <span className="font-semibold">{g.ownerName}&rsquo;s game</span>
+              <span className="ml-2 text-xs text-slate-400">
+                Round {g.round} · {g.countriesHeld} of 10 countries
+              </span>
+            </span>
+            <span className={`text-xs ${g.status === "finished" ? "text-amber-300" : "text-emerald-300"}`}>
+              {g.status === "finished" ? "Finished" : "In progress"}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function HomePage() {
+  const { user, loading } = useAuth();
+  const [recent, setRecent] = useState<GameSummary[]>([]);
+  const [mine, setMine] = useState<GameSummary[]>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    listRecentGames(10)
+      .then(setRecent)
+      .catch((e) => setError(friendlyError(e)));
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    listMyGames(user.uid)
+      .then(setMine)
+      .catch((e) => setError(friendlyError(e)));
+  }, [user]);
+
+  return (
+    <main className="mx-auto max-w-3xl space-y-8 p-6">
+      <section className="space-y-3 text-center">
+        <h1 className="text-4xl font-bold">🌍 Geopolitics</h1>
+        <p className="text-slate-300">
+          Ten countries. Nine AI rivals. Roll the dice, take territory and conquer the world.
+        </p>
+        <Link href="/new" className="inline-block rounded bg-emerald-600 px-6 py-3 font-semibold hover:bg-emerald-500">
+          Start a new game
+        </Link>
+        {!loading && !user && (
+          <p className="text-sm text-slate-400">
+            <Link href="/login" className="underline">
+              Log in
+            </Link>{" "}
+            or{" "}
+            <Link href="/signup" className="underline">
+              sign up
+            </Link>{" "}
+            to play. Anyone can watch.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        )}
+      </section>
+
+      {error && <p className="text-sm text-red-400">{error}</p>}
+
+      {user && (
+        <section>
+          <h2 className="mb-2 text-lg font-semibold">Your games</h2>
+          <GameList games={mine} empty="You have not started a game yet." />
+        </section>
+      )}
+
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Recent games (anyone can watch)</h2>
+        <GameList games={recent} empty="No games yet. Be the first!" />
+      </section>
+    </main>
   );
 }

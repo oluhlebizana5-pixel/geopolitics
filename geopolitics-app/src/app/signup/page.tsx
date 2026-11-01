@@ -23,7 +23,7 @@ export default function SignupPage() {
     setBusy(true);
     try {
       await signUp(email, password, name);
-      router.push("/test-firebase");
+      router.push("/");
     } catch (err) {
       setError(friendlyError(err));
     } finally {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
+import NavBar from "@/components/NavBar";
 
 export const metadata: Metadata = {
   title: "Geopolitics",
@@ -10,8 +11,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-900 text-slate-100">
-        <AuthProvider>{children}</AuthProvider>
+      <body className="min-h-screen">
+        <AuthProvider>
+          <NavBar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
