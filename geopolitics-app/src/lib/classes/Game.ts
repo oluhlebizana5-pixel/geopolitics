@@ -19,7 +19,7 @@ export interface AttackResult {
   eliminatedPlayerId: string | null;
 }
 
-interface Battle {
+export interface Battle {
   attackerCode: string;
   defenderCode: string;
   defenderStartSoldiers: number; // used for the conquest reward
@@ -259,6 +259,7 @@ export class Game {
   }
 
   // Plain snapshot, ready to store in Firestore later
+  // Snapshot of the whole game, ready to store in Firestore
   toJSON() {
     return {
       status: this._status,
@@ -267,8 +268,33 @@ export class Game {
       turnOrder: this.turnOrder,
       winnerId: this._winnerId,
       pendingReinforcements: this._pendingReinforcements,
+      attackUsed: this._attackUsed,
+      battle: this._battle, // saved so an attack survives closing the browser
       players: this.players.map((p) => p.toJSON()),
       countries: this.countries.map((c) => c.toJSON()),
     };
   }
+
+  // Rebuild a Game from a saved snapshot
+  static fromJSON(data: GameSnapshot, rng: Rng = Math.random): Game {
+    const players = data.players.map((p) => {
+      const player = new Player(p.id, p.name, p.isNpc);
+      if (p.eliminated) player.eliminate();
+      return player;
+    });
+    const countries = data.countries.map(
+      (c) => new Country(c.code, c.name, c.population, c.ownerId, c.soldiers)
+    );
+    const game = new Game(players, countries, data.turnOrder, rng);
+    game._round = data.round;
+    game._currentIndex = data.turnOrder.indexOf(data.currentPlayerId);
+    game._status = data.status;
+    game._winnerId = data.winnerId;
+    game._pendingReinforcements = data.pendingReinforcements;
+    game._attackUsed = data.attackUsed;
+    game._battle = data.battle;
+    return game;
+  }
 }
+
+export type GameSnapshot = ReturnType<Game["toJSON"]>;
