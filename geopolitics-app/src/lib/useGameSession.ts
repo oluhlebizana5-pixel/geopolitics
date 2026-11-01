@@ -4,11 +4,14 @@
 //  - live game + log from Firestore (anyone can watch)
 //  - the NPC "autopilot" (runs only in the OWNER's browser)
 //  - human actions (owner only, only on the human's turn)
+//  - AI commentary for every battle round
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { Game } from "./classes/Game";
 import { NpcEvent, NpcStrategy } from "./classes/NpcStrategy";
+import { buildCommentaryRequest } from "./commentaryShared";
+import { fetchCommentary } from "./commentaryClient";
 import {
   LoadedGame,
   LogEntry,
@@ -16,6 +19,7 @@ import {
   canPlayTurn,
   friendlyError,
   saveGame,
+  setLogCommentary,
   subscribeToGame,
   subscribeToLog,
 } from "./firebaseService";
@@ -44,6 +48,7 @@ export function useGameSession(gameId: string) {
   const [fast, setFast] = useState(false);
 
   const latest = useRef<LoadedGame | null>(null);
+  const logRef = useRef<LogEntry[]>([]);
   const fastRef = useRef(false);
   const runningRef = useRef(false);
   const busyRef = useRef(false);
@@ -61,7 +66,10 @@ export function useGameSession(gameId: string) {
       },
       (e) => setError(friendlyError(e))
     );
-    const stopLog = subscribeToLog(gameId, setLog);
+    const stopLog = subscribeToLog(gameId, (entries) => {
+      logRef.current = entries;
+      setLog(entries);
+    });
     return () => {
       aliveRef.current = false;
       stopGame();
@@ -72,6 +80,28 @@ export function useGameSession(gameId: string) {
   const isOwner = !!loaded && !!uid && uid === loaded.meta.ownerUid;
   const canPlay = !!loaded && canPlayTurn(loaded, uid);
   const currentIsNpc = !!loaded && loaded.game.status === "active" && loaded.game.currentPlayer.isNpc;
+
+  // ---- AI commentary: runs in the background, never blocks the game ----
+  // Call right after the events were saved, while `game` is still in the state they describe.
+  const addCommentary = useCallback(
+    (game: Game, events: NpcEvent[], ids: string[]) => {
+      events.forEach((event, i) => {
+        const entryId = ids[i];
+        const request = buildCommentaryRequest(game, event);
+        if (!request || !entryId) return;
+        request.recent = logRef.current
+          .map((e) => e.commentary)
+          .filter((c): c is string => !!c)
+          .slice(-3);
+        void fetchCommentary(request)
+          .then((r) => setLogCommentary(gameId, entryId, r.commentary, r.source))
+          .catch(() => {
+            /* commentary is optional: ignore failures */
+          });
+      });
+    },
+    [gameId]
+  );
 
   // ---- NPC autopilot: plays NPC turns one visible step at a time ----
   const runNpcTurns = useCallback(async () => {
@@ -85,7 +115,8 @@ export function useGameSession(gameId: string) {
       while (aliveRef.current && game.status === "active" && game.currentPlayer.isNpc) {
         for (const event of strategy.playTurn(game)) {
           // Save after EVERY step so viewers see it live and a refresh can resume.
-          await Promise.all([saveGame(gameId, game), addLogEntries(gameId, [event])]);
+          const [, ids] = await Promise.all([saveGame(gameId, game), addLogEntries(gameId, [event])]);
+          addCommentary(game, [event], ids);
           if (!aliveRef.current) return;
           await sleep(pauseFor(event, fastRef.current));
           if (!aliveRef.current) return;
@@ -99,7 +130,7 @@ export function useGameSession(gameId: string) {
       fastRef.current = false; // fast-forward lasts until the player's next turn
       setFast(false);
     }
-  }, [gameId]);
+  }, [gameId, addCommentary]);
 
   const roundNow = loaded?.game.round;
   const currentIdNow = loaded?.game.currentPlayer.id;
@@ -125,7 +156,8 @@ export function useGameSession(gameId: string) {
       try {
         const game = Game.fromJSON(snap.game.toJSON());
         const events = fn(game); // throws a readable Error if a rule is broken
-        await Promise.all([saveGame(gameId, game), addLogEntries(gameId, events)]);
+        const [, ids] = await Promise.all([saveGame(gameId, game), addLogEntries(gameId, events)]);
+        addCommentary(game, events, ids);
       } catch (e) {
         setActionError(friendlyError(e));
       } finally {
@@ -133,7 +165,7 @@ export function useGameSession(gameId: string) {
         setBusy(false);
       }
     },
-    [gameId, uid]
+    [gameId, uid, addCommentary]
   );
 
   const clearError = useCallback(() => setError(""), []);

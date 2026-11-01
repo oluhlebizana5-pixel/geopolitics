@@ -208,17 +208,41 @@ export async function listRecentGames(count = 20): Promise<GameSummary[]> {
 // Stored in games/{gameId}/log
 // ======================================================================
 
-export type LogEntry = NpcEvent & { id: string; seq: number; commentary?: string };
+export type LogEntry = NpcEvent & {
+  id: string;
+  seq: number;
+  commentary?: string;
+  commentarySource?: "ai" | "fallback";
+};
 
-export async function addLogEntries(gameId: string, events: NpcEvent[]): Promise<void> {
-  if (events.length === 0) return;
+// Saves events and returns the new entries' ids (same order as `events`)
+export async function addLogEntries(gameId: string, events: NpcEvent[]): Promise<string[]> {
+  if (events.length === 0) return [];
   const batch = writeBatch(db);
   const base = Date.now() * 1000; // keeps entries in order
+  const ids: string[] = [];
   events.forEach((e, i) => {
     const ref = doc(collection(db, "games", gameId, "log"));
+    ids.push(ref.id);
     batch.set(ref, { ...clean(e), seq: base + i, createdAt: serverTimestamp() });
   });
   await batch.commit();
+  return ids;
+}
+
+// Attaches the commentary line to a battle entry (allowed by the Firestore rules for the owner only)
+export async function setLogCommentary(
+  gameId: string,
+  entryId: string,
+  commentary: string,
+  source: "ai" | "fallback"
+): Promise<void> {
+  await updateDoc(doc(db, "games", gameId, "log", entryId), { commentary, commentarySource: source });
+}
+
+// Proof of identity sent to our own API routes
+export async function getIdToken(): Promise<string | null> {
+  return (await auth.currentUser?.getIdToken()) ?? null;
 }
 
 export function subscribeToLog(
