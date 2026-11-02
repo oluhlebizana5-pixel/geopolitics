@@ -5,6 +5,7 @@ import { Game } from "@/lib/classes/Game";
 import { LogEntry } from "@/lib/firebaseService";
 import { DieFace } from "./Dice";
 import { banner, card, muted } from "@/lib/ui";
+import Flag from "./Flag";
 
 interface BattlePanelProps {
   entry: LogEntry | null; // the most recent battle round
@@ -46,7 +47,7 @@ export default function BattlePanel({ entry, game, fast }: BattlePanelProps) {
   if (!entry || !entry.result) {
     return (
       <section className={card}>
-        <h2 className="mb-1 font-semibold text-accent-foreground">⚔ Battle</h2>
+        <h2 className="mb-1 text-lg font-bold">⚔ Battle</h2>
         <p className={`text-sm ${muted}`}>No battles yet. When an attack starts, the dice appear here.</p>
       </section>
     );
@@ -59,13 +60,19 @@ export default function BattlePanel({ entry, game, fast }: BattlePanelProps) {
 
   return (
     <section className={card}>
-      <h2 className="mb-3 font-semibold text-accent-foreground">⚔ Battle</h2>
+      <h2 className="mb-3 text-lg font-bold">⚔ Battle</h2>
       <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-semibold text-rose-700 dark:text-rose-300">
-          {attackerName} <span className="font-normal text-muted-foreground">({entry.playerName})</span>
+        <span className="flex items-center gap-2 font-semibold">
+          {entry.attackerCode && <Flag code={entry.attackerCode} size={26} />}
+          <span>
+            {attackerName} <span className="font-normal text-muted-foreground">({entry.playerName})</span>
+          </span>
         </span>
         <span className="text-muted-foreground">vs</span>
-        <span className="font-semibold text-sky-700 dark:text-sky-300">{defenderName}</span>
+        <span className="flex items-center gap-2 font-semibold">
+          {defenderName}
+          {entry.defenderCode && <Flag code={entry.defenderCode} size={26} />}
+        </span>
       </div>
 
       <div className="mb-3 flex flex-col items-center gap-2">
@@ -97,9 +104,9 @@ export default function BattlePanel({ entry, game, fast }: BattlePanelProps) {
           <span className="text-muted-foreground">Rolling…</span>
         ) : (
           <>
-            <span className="text-rose-700 dark:text-rose-300">{attackerName} lost {attackerLosses}</span>
+            <span className="font-medium">{attackerName} lost {attackerLosses}</span>
             {" · "}
-            <span className="text-sky-700 dark:text-sky-300">{defenderName} lost {defenderLosses}</span>
+            <span className="font-medium">{defenderName} lost {defenderLosses}</span>
           </>
         )}
       </p>

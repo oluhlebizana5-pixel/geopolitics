@@ -27,13 +27,14 @@ function ResultBar({ won, lost, playing }: { won: number; lost: number; playing:
   return (
     <div>
       <div className="flex h-3 overflow-hidden rounded-full bg-muted">
-        <div className="bg-amber-500" style={{ width: w(won) }} title={`Won: ${won}`} />
-        <div className="bg-rose-500" style={{ width: w(lost) }} title={`Lost: ${lost}`} />
-        <div className="bg-emerald-500" style={{ width: w(playing) }} title={`In progress: ${playing}`} />
+        <div className="bg-primary" style={{ width: w(won) }} title={`Won: ${won}`} />
+        <div className="bg-foreground" style={{ width: w(lost) }} title={`Lost: ${lost}`} />
+        <div className="bg-muted-foreground/40" style={{ width: w(playing) }} title={`In progress: ${playing}`} />
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        <span className="text-amber-700 dark:text-amber-300">■ won {won}</span> · <span className="text-rose-700 dark:text-rose-300">■ lost {lost}</span> ·{" "}
-        <span className="text-emerald-700 dark:text-emerald-300">■ in progress {playing}</span>
+      <p className="mt-1 flex flex-wrap gap-x-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm border border-foreground/20 bg-primary" /> won {won}</span>
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm bg-foreground" /> lost {lost}</span>
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm bg-muted-foreground/40" /> in progress {playing}</span>
       </p>
     </div>
   );
@@ -63,13 +64,13 @@ export default function StatsPage() {
   }, [user]);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 p-6">
-      <h1 className="text-2xl font-bold text-accent-foreground">📊 Stats</h1>
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+    <main className="mx-auto max-w-3xl space-y-8 px-4 py-12">
+      <h1 className="text-3xl font-bold tracking-tight">Stats</h1>
+      {error && <p className="text-sm font-semibold">{error}</p>}
 
       {/* Your stats */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-accent-foreground">Your stats</h2>
+        <h2 className="text-xl font-bold">Your stats</h2>
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : !user ? (
@@ -108,7 +109,7 @@ export default function StatsPage() {
 
       {/* Platform stats */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-accent-foreground">Whole platform</h2>
+        <h2 className="text-xl font-bold">Whole platform</h2>
         {!platform || !totals ? (
           !error && <p className="text-muted-foreground">Loading platform stats...</p>
         ) : (

@@ -1,7 +1,10 @@
 "use client";
 
 import { Game } from "@/lib/classes/Game";
-import { card, muted, styleFor } from "@/lib/ui";
+import { card, muted } from "@/lib/ui";
+import { cn } from "@/lib/utils";
+import { playerFlagCode } from "@/lib/flags";
+import Flag from "./Flag";
 
 interface BoardProps {
   game: Game;
@@ -18,23 +21,24 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
 
   return (
     <section className={card}>
-      {/* Player legend */}
+      {/* Player legend: each player is shown by the flag of the country they started with */}
       <ul className="mb-4 flex flex-wrap gap-2 text-xs">
-        {players.map((p, i) => {
-          const s = styleFor(i);
+        {players.map((p) => {
           const held = game.countriesOf(p.id).length;
           const isCurrent = current?.id === p.id;
           return (
             <li
               key={p.id}
-              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
-                isCurrent ? "border-foreground bg-accent text-accent-foreground" : "border-border"
-              } ${p.eliminated ? "opacity-40 line-through" : ""}`}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border py-1 pr-3 pl-1",
+                isCurrent ? "border-foreground/30 bg-primary text-primary-foreground" : "border-border bg-card",
+                p.eliminated && "opacity-40 line-through"
+              )}
             >
-              <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
+              <Flag code={playerFlagCode(p.id)} size={20} />
               {isCurrent && <span>▶</span>}
-              <span>{p.id === humanPlayerId ? `${p.name} (you)` : p.name}</span>
-              <span className={muted}>{p.eliminated ? "out" : `${held} 🌍`}</span>
+              <span>{p.id === humanPlayerId ? `${p.name} (you)` : p.name.replace(" (NPC)", "")}</span>
+              <span className={isCurrent ? "opacity-70" : muted}>{p.eliminated ? "out" : `${held}`}</span>
             </li>
           );
         })}
@@ -43,37 +47,38 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
       {/* The 10 countries */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {game.allCountries.map((c) => {
-          const ownerIndex = players.findIndex((p) => p.id === c.ownerId);
-          const s = styleFor(ownerIndex);
+          const owner = players.find((p) => p.id === c.ownerId);
           const mine = c.ownerId === humanPlayerId;
           const isAttacker = c.code === attackerCode;
           const isTarget = c.code === targetCode;
           const fighting = fightingCodes.includes(c.code);
-          const ring = isAttacker
-            ? "ring-2 ring-foreground"
-            : isTarget
-            ? "ring-2 ring-rose-600 dark:ring-rose-400"
-            : fighting
-            ? "ring-2 ring-amber-500 dark:ring-amber-300"
-            : "";
-          const className = `flex flex-col items-start rounded-lg border-2 p-3 text-left transition ${s.border} ${s.bg} ${ring} ${
-            onCountryClick ? "cursor-pointer hover:brightness-95 dark:hover:brightness-125" : ""
-          }`;
+          const className = cn(
+            "flex flex-col items-start rounded-2xl border p-3 text-left transition",
+            mine ? "border-foreground/20 bg-primary text-primary-foreground" : "border-border bg-card",
+            isAttacker && "ring-2 ring-foreground",
+            isTarget && "outline-2 outline-dashed outline-offset-2 outline-foreground",
+            fighting && !isAttacker && !isTarget && "ring-2 ring-foreground/40",
+            onCountryClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-md"
+          );
+          const sub = mine ? "text-primary-foreground/70" : "text-muted-foreground";
           const body = (
             <>
-              <span className="flex w-full items-center justify-between text-[11px] text-muted-foreground">
-                <span>{c.code}</span>
-                <span>{(c.population / 1_000_000).toLocaleString("en", { maximumFractionDigits: 1 })}m people</span>
+              <span className="flex w-full items-center justify-between gap-2">
+                <Flag code={c.code} size={34} />
+                <span className={cn("text-[11px]", sub)}>
+                  {(c.population / 1_000_000).toLocaleString("en", { maximumFractionDigits: 1 })}m
+                </span>
               </span>
-              <span className="mt-1 font-semibold leading-tight">{c.name}</span>
-              <span className={`text-xs ${s.text}`}>
-                {mine ? "You" : players[ownerIndex]?.name.replace(" (NPC)", "")}
+              <span className="mt-2 font-semibold leading-tight">{c.name}</span>
+              <span className={cn("mt-0.5 flex items-center gap-1 text-xs", sub)}>
+                {owner && !mine && <Flag code={playerFlagCode(owner.id)} size={14} />}
+                {mine ? "You" : owner?.name.replace(" (NPC)", "")}
               </span>
               <span className="mt-2 flex items-baseline gap-1">
                 <span key={c.soldiers} className="animate-pop text-3xl font-bold tabular-nums">
                   {c.soldiers}
                 </span>
-                <span className="text-xs text-muted-foreground">soldiers</span>
+                <span className={cn("text-xs", sub)}>{c.soldiers === 1 ? "soldier" : "soldiers"}</span>
               </span>
               {(isAttacker || isTarget) && (
                 <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide">

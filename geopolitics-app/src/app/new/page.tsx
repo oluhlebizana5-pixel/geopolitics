@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { COUNTRIES, pickOpponents } from "@/lib/countriesData";
 import { Game } from "@/lib/classes/Game";
 import { soldiersForPopulation } from "@/lib/classes/rules";
-import { banner, btnPrimary, btnSecondary, heading, input } from "@/lib/ui";
+import { banner, btnPrimary, btnSecondary, input } from "@/lib/ui";
 import { createGame, friendlyError } from "@/lib/firebaseService";
 
 const SORTED = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
@@ -23,8 +23,8 @@ export default function NewGamePage() {
 
   if (!user) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <h1 className={`mb-2 text-2xl font-bold ${heading}`}>Start a new game</h1>
+      <main className="mx-auto max-w-md px-4 py-16">
+        <h1 className="mb-2 text-2xl font-bold">Start a new game</h1>
         <p className="mb-4 text-foreground">You need an account to play. Anyone can watch games without one.</p>
         <div className="flex gap-3">
           <Link href="/login" className={btnSecondary}>
@@ -56,9 +56,10 @@ export default function NewGamePage() {
   }
 
   return (
-    <main className="mx-auto max-w-md space-y-4 p-6">
-      <h1 className={`text-2xl font-bold ${heading}`}>Start a new game</h1>
-      <p className="text-foreground">
+    <main className="mx-auto max-w-md px-4 py-16">
+      <div className="space-y-4 rounded-[2rem] border border-border bg-card p-8 shadow-sm">
+      <h1 className="text-2xl font-bold">Start a new game</h1>
+      <p className="text-muted-foreground">
         Pick your country. Nine other countries are chosen at random to be NPC rivals. Conquer all ten to win.
       </p>
       <label className="block text-sm text-foreground">
@@ -76,10 +77,11 @@ export default function NewGamePage() {
         people, so you start with <b>{soldiersForPopulation(chosen.population)}</b> soldier
         {soldiersForPopulation(chosen.population) === 1 ? "" : "s"}.
       </p>
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      <button disabled={busy} onClick={start} className={`${btnPrimary} w-full p-3`}>
+      {error && <p className="text-sm font-semibold">{error}</p>}
+      <button disabled={busy} onClick={start} className={`${btnPrimary} h-12 w-full text-base`}>
         {busy ? "Creating game..." : "Start game"}
       </button>
+    </div>
     </main>
   );
 }

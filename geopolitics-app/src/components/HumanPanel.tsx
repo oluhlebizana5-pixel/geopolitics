@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Game } from "@/lib/classes/Game";
 import { NpcEvent } from "@/lib/classes/NpcStrategy";
-import { btnAccent, btnDanger, btnPrimary, btnSecondary, input, inputSmall } from "@/lib/ui";
+import { btnAccent, btnDanger, btnPrimary, btnSecondary, input, inputSmall, muted, tone } from "@/lib/ui";
 import { attackRound, endHumanTurn, placeReinforcements, transferSoldiers } from "@/lib/classes/HumanActions";
 
 interface HumanPanelProps {
@@ -53,8 +53,8 @@ export default function HumanPanel({
   const maxTransfer = fromCountry ? fromCountry.soldiers - 1 : 0;
 
   return (
-    <section className="space-y-4 rounded-xl border-2 border-primary bg-card p-4 text-card-foreground shadow-sm">
-      <h2 className="text-lg font-bold text-accent-foreground">🎮 Your turn</h2>
+    <section className="space-y-4 rounded-3xl border-2 border-foreground/20 bg-card p-5 text-card-foreground shadow-sm">
+      <h2 className="text-lg font-bold">🎮 Your turn</h2>
 
       {/* 1. Reinforcements */}
       {pending > 0 && (
@@ -80,14 +80,14 @@ export default function HumanPanel({
             />
             <button
               disabled={busy}
-              className={btnPrimary}
+              className={`${btnPrimary}`}
               onClick={() => onAction((g) => placeReinforcements(g, reinforceCountry, Math.min(Math.max(1, Math.floor(reinforceAmount) || 1), pending)))}
             >
               Place
             </button>
             <button
               disabled={busy}
-              className={btnSecondary}
+              className={`${btnSecondary}`}
               onClick={() => onAction((g) => placeReinforcements(g, reinforceCountry, pending))}
             >
               Place all {pending}
@@ -108,12 +108,12 @@ export default function HumanPanel({
             <div className="flex flex-wrap gap-2">
               <button
                 disabled={busy}
-                className={btnDanger}
+                className={`${btnDanger}`}
                 onClick={() => onAction((g) => attackRound(g, battle.attackerCode, battle.defenderCode))}
               >
                 🎲 Roll again
               </button>
-              <button disabled={busy} className={btnSecondary} onClick={() => onAction((g) => endHumanTurn(g))}>
+              <button disabled={busy} className={`${btnSecondary}`} onClick={() => onAction((g) => endHumanTurn(g))}>
                 ✋ Stop attack &amp; end turn
               </button>
             </div>
@@ -146,12 +146,12 @@ export default function HumanPanel({
             </label>
             <button
               disabled={busy || pending > 0 || !attacker || !target}
-              className={btnDanger}
+              className={`${btnDanger}`}
               onClick={() => onAction((g) => attackRound(g, attacker, target))}
             >
               ⚔ Attack
             </button>
-            {pending > 0 && <p className="text-xs text-amber-700 dark:text-amber-300">Place all your new soldiers first.</p>}
+            {pending > 0 && <p className="text-xs font-medium text-foreground">Place all your new soldiers first.</p>}
           </>
         )}
       </div>
@@ -189,7 +189,7 @@ export default function HumanPanel({
             />
             <button
               disabled={busy || maxTransfer < 1 || !to}
-              className={btnPrimary}
+              className={`${btnPrimary}`}
               onClick={() => onAction((g) => transferSoldiers(g, from, to, Math.max(1, Math.floor(transferAmount) || 1)))}
             >
               Move
@@ -209,7 +209,7 @@ export default function HumanPanel({
           >
             {attackUsed ? "End turn" : "Skip attack & end turn"}
           </button>
-          {pending > 0 && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Place all your new soldiers before ending your turn.</p>}
+          {pending > 0 && <p className="mt-1 text-xs font-medium text-foreground">Place all your new soldiers before ending your turn.</p>}
         </div>
       )}
     </section>

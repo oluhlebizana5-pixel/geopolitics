@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import "flag-icons/css/flag-icons.min.css";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import NavBar from "@/components/NavBar";
+import Footer from "@/components/Footer";
+import TourGuide from "@/components/TourGuide";
 
 export const metadata: Metadata = {
   title: "Geopolitics",
@@ -15,13 +19,15 @@ const themeScript = `(function(){try{var t=localStorage.getItem("theme");var d=t
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="min-h-screen">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
         <AuthProvider>
           <NavBar />
           {children}
+          <Footer />
+          <TourGuide />
         </AuthProvider>
       </body>
     </html>

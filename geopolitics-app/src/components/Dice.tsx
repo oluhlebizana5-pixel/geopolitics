@@ -10,10 +10,17 @@ const PIPS: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
+// Dots must stay dark on the pink die in dark mode too, so each tone says which dot colour to use.
+const PIP = {
+  attacker: "bg-primary-foreground",
+  defender: "bg-foreground",
+  neutral: "bg-foreground",
+};
+
 const TONES = {
-  attacker: "border-rose-400 bg-rose-100 dark:border-rose-500 dark:bg-rose-200",
-  defender: "border-sky-400 bg-sky-100 dark:border-sky-500 dark:bg-sky-200",
-  neutral: "border-stone-400 bg-stone-100 dark:border-stone-500 dark:bg-stone-200",
+  attacker: "border-foreground/30 bg-primary",
+  defender: "border-foreground/30 bg-card",
+  neutral: "border-border bg-muted",
 };
 
 interface DieFaceProps {
@@ -31,12 +38,12 @@ export function DieFace({ value, tone = "neutral", rolling = false, small = fals
   return (
     <div
       aria-label={`Die showing ${value}`}
-      className={`grid grid-cols-3 grid-rows-3 rounded-lg border-2 ${size} ${TONES[tone]} ${
+      className={`grid grid-cols-3 grid-rows-3 rounded-xl border-2 ${size} ${TONES[tone]} ${
         rolling ? "animate-tumble" : ""
-      } ${winner ? "ring-4 ring-emerald-500 dark:ring-emerald-400" : ""}`}
+      } ${winner ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""}`}
     >
       {Array.from({ length: 9 }).map((_, i) => (
-        <span key={i} className={`m-auto rounded-full ${dotSize} ${dots.includes(i) ? "bg-stone-900" : "bg-transparent"}`} />
+        <span key={i} className={`m-auto rounded-full ${dotSize} ${dots.includes(i) ? PIP[tone] : "bg-transparent"}`} />
       ))}
     </div>
   );

@@ -7,13 +7,16 @@ import { friendlyError } from "@/lib/firebaseService";
 import { listMyGameRecords } from "@/lib/statsService";
 import { GameRecord, Outcome, outcomeOf } from "@/lib/stats";
 import { btnPrimary, btnSecondary, cardLink } from "@/lib/ui";
+import PageBar, { usePagination } from "@/components/PageBar";
+import Flag from "@/components/Flag";
+import { playerFlagCode } from "@/lib/flags";
 
 type Filter = "all" | Outcome;
 
 const LABELS: Record<Outcome, { text: string; className: string }> = {
-  playing: { text: "In progress", className: "text-emerald-700 dark:text-emerald-300" },
-  won: { text: "Won 🏆", className: "text-amber-700 dark:text-amber-300" },
-  lost: { text: "Lost", className: "text-rose-700 dark:text-rose-300" },
+  playing: { text: "In progress", className: "text-foreground" },
+  won: { text: "Won 🏆", className: "text-foreground" },
+  lost: { text: "Lost", className: "text-muted-foreground" },
 };
 
 export default function MyGamesPage() {
@@ -21,6 +24,8 @@ export default function MyGamesPage() {
   const [records, setRecords] = useState<GameRecord[] | null>(null);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const filtered = (records ?? []).filter((r) => filter === "all" || outcomeOf(r) === filter);
+  const { page, setPage, pageCount, slice: shown } = usePagination(filtered, 6);
 
   useEffect(() => {
     if (!user) return;
@@ -33,8 +38,8 @@ export default function MyGamesPage() {
 
   if (!user) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <h1 className="mb-2 text-2xl font-bold text-accent-foreground">My games</h1>
+      <main className="mx-auto max-w-md px-4 py-16">
+        <h1 className="mb-2 text-2xl font-bold">My games</h1>
         <p className="mb-4 text-foreground">Log in to see the games you have played.</p>
         <div className="flex gap-3">
           <Link href="/login" className={btnSecondary}>
@@ -48,7 +53,6 @@ export default function MyGamesPage() {
     );
   }
 
-  const shown = (records ?? []).filter((r) => filter === "all" || outcomeOf(r) === filter);
   const filters: { key: Filter; label: string }[] = [
     { key: "all", label: "All" },
     { key: "playing", label: "In progress" },
@@ -57,9 +61,9 @@ export default function MyGamesPage() {
   ];
 
   return (
-    <main className="mx-auto max-w-3xl space-y-4 p-6">
+    <main className="mx-auto max-w-3xl space-y-4 px-4 py-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-accent-foreground">My games</h1>
+        <h1 className="text-3xl font-bold tracking-tight">My games</h1>
         <Link href="/new" className={btnPrimary}>
           Start a new game
         </Link>
@@ -69,9 +73,12 @@ export default function MyGamesPage() {
         {filters.map((f) => (
           <button
             key={f.key}
-            onClick={() => setFilter(f.key)}
+            onClick={() => {
+              setFilter(f.key);
+              setPage(1);
+            }}
             className={`rounded-full border px-3 py-1 ${
-              filter === f.key ? "border-foreground bg-accent text-accent-foreground" : "border-border hover:bg-muted"
+              filter === f.key ? "border-foreground/30 bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"
             }`}
           >
             {f.label}
@@ -79,9 +86,9 @@ export default function MyGamesPage() {
         ))}
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm font-semibold">{error}</p>}
       {!records && !error && <p className="text-muted-foreground">Loading your games...</p>}
-      {records && shown.length === 0 && (
+      {records && filtered.length === 0 && (
         <p className="text-sm text-muted-foreground">
           {records.length === 0 ? "You have not started a game yet." : "No games match this filter."}
         </p>
@@ -92,8 +99,12 @@ export default function MyGamesPage() {
           const label = LABELS[outcomeOf(r)];
           return (
             <li key={r.id}>
-              <Link href={`/game/${r.id}`} className={`flex items-center justify-between ${cardLink}`}>
-                <span>
+              <Link
+                href={`/game/${r.id}`}
+                className={`flex items-center gap-3 ${cardLink}`}
+              >
+                <Flag code={playerFlagCode(r.humanPlayerId)} size={36} />
+                <span className="min-w-0 flex-1">
                   <span className="font-semibold">Game {r.id.slice(0, 6)}</span>
                   <span className="ml-2 text-xs text-muted-foreground">
                     Round {r.round} · {r.countriesHeld} of 10 countries
@@ -106,6 +117,7 @@ export default function MyGamesPage() {
           );
         })}
       </ul>
+      <PageBar page={page} pageCount={pageCount} onChange={setPage} />
     </main>
   );
 }

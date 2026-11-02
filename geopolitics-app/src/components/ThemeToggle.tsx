@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { Moon, Sun } from "lucide-react";
 
 // Reads the real state from the <html> element, so it always matches what the page shows.
 function subscribe(onChange: () => void) {
@@ -29,9 +30,9 @@ export default function ThemeToggle() {
       onClick={toggle}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="rounded-lg border border-border bg-secondary px-2.5 py-1 text-sm text-secondary-foreground hover:opacity-80"
+      className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-card-foreground hover:bg-muted"
     >
-      {dark ? "☀️" : "🌙"}
+      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </button>
   );
 }
