@@ -9,6 +9,7 @@ import Board from "@/components/Board";
 import BattlePanel from "@/components/BattlePanel";
 import HumanPanel from "@/components/HumanPanel";
 import LogPanel from "@/components/LogPanel";
+import { banner, btnAccent, btnSecondary, heading, link, muted, tone } from "@/lib/ui";
 
 export default function GameClient() {
   const params = useParams<{ id: string }>();
@@ -23,16 +24,16 @@ export default function GameClient() {
   if (s.notFound) {
     return (
       <main className="mx-auto max-w-xl p-6">
-        <h1 className="mb-2 text-xl font-bold">Game not found</h1>
-        <p className="mb-4 text-slate-400">This link may be wrong, or the game no longer exists.</p>
-        <Link href="/" className="underline">
+        <h1 className={`mb-2 text-xl font-bold ${heading}`}>Game not found</h1>
+        <p className={`mb-4 ${muted}`}>This link may be wrong, or the game no longer exists.</p>
+        <Link href="/" className={link}>
           Back to home
         </Link>
       </main>
     );
   }
   if (s.error && !s.loaded) {
-    return <main className="p-6 text-red-400">Could not load the game: {s.error}</main>;
+    return <main className={`p-6 ${tone.error}`}>Could not load the game: {s.error}</main>;
   }
   if (!s.loaded) return <main className="p-6">Loading game...</main>;
 
@@ -69,10 +70,10 @@ export default function GameClient() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold">
-            {meta.ownerName}&rsquo;s game <span className="text-sm font-normal text-slate-400">· Round {game.round}</span>
+          <h1 className={`text-xl font-bold ${heading}`}>
+            {meta.ownerName}&rsquo;s game <span className="text-sm font-normal text-muted-foreground">· Round {game.round}</span>
           </h1>
-          <p className="text-sm text-slate-300">
+          <p className="text-sm text-foreground">
             {game.status === "finished"
               ? "Game over"
               : s.npcRunning
@@ -87,12 +88,12 @@ export default function GameClient() {
             <button
               onClick={() => s.setFastForward(true)}
               disabled={s.fast}
-              className="rounded bg-violet-600 px-3 py-2 text-sm font-semibold disabled:opacity-60"
+              className={btnAccent}
             >
               {s.fast ? "⏩ Fast-forwarding…" : "⏩ Fast-forward"}
             </button>
           )}
-          <button onClick={copyLink} className="rounded bg-slate-700 px-3 py-2 text-sm hover:bg-slate-600">
+          <button onClick={copyLink} className={btnSecondary}>
             {copied ? "✔ Link copied" : "🔗 Share link"}
           </button>
         </div>
@@ -100,46 +101,46 @@ export default function GameClient() {
 
       {/* Banners */}
       {winner && (
-        <div className="rounded-lg border border-amber-400 bg-amber-950/60 p-3 text-center font-semibold text-amber-200">
+        <div className={`${banner.gold} text-center font-semibold`}>
           {winner.id === meta.humanPlayerId ? "🏆 You conquered the world!" : `👑 ${winner.name} conquered the world.`}
         </div>
       )}
       {!winner && human.eliminated && (
-        <div className="rounded-lg border border-slate-500 bg-slate-800 p-3 text-center text-sm">
+        <div className={`${banner.note} text-center`}>
           You have been eliminated. You can keep watching, or use fast-forward to see how the game ends.
         </div>
       )}
       {!s.isOwner && (
-        <div className="rounded-lg border border-sky-500 bg-sky-950/50 p-3 text-sm">
+        <div className={banner.info}>
           👀 You are watching this game live. Only {meta.ownerName} can play.{" "}
           {!user && (
             <>
-              <Link href="/login" className="underline">
+              <Link href="/login" className={link}>
                 Log in
               </Link>{" "}
               or{" "}
-              <Link href="/signup" className="underline">
+              <Link href="/signup" className={link}>
                 sign up
               </Link>{" "}
               to start your own game.
             </>
           )}
           {user && (
-            <Link href="/new" className="underline">
+            <Link href="/new" className={link}>
               Start your own game
             </Link>
           )}
         </div>
       )}
       {s.error && (
-        <div className="rounded-lg border border-red-500 bg-red-950/60 p-3 text-sm">
+        <div className={banner.error}>
           Something went wrong: {s.error}{" "}
-          <button className="underline" onClick={s.clearError}>
+          <button className={link} onClick={s.clearError}>
             Retry
           </button>
         </div>
       )}
-      {s.actionError && <div className="rounded-lg border border-amber-500 bg-amber-950/60 p-3 text-sm">{s.actionError}</div>}
+      {s.actionError && <div className={banner.warn}>{s.actionError}</div>}
 
       {/* Main layout */}
       <div className="grid gap-4 lg:grid-cols-5">

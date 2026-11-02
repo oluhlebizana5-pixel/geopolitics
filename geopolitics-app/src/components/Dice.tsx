@@ -11,9 +11,9 @@ const PIPS: Record<number, number[]> = {
 };
 
 const TONES = {
-  attacker: "border-rose-400 bg-rose-100",
-  defender: "border-sky-400 bg-sky-100",
-  neutral: "border-slate-400 bg-slate-100",
+  attacker: "border-rose-400 bg-rose-100 dark:border-rose-500 dark:bg-rose-200",
+  defender: "border-sky-400 bg-sky-100 dark:border-sky-500 dark:bg-sky-200",
+  neutral: "border-stone-400 bg-stone-100 dark:border-stone-500 dark:bg-stone-200",
 };
 
 interface DieFaceProps {
@@ -33,10 +33,10 @@ export function DieFace({ value, tone = "neutral", rolling = false, small = fals
       aria-label={`Die showing ${value}`}
       className={`grid grid-cols-3 grid-rows-3 rounded-lg border-2 ${size} ${TONES[tone]} ${
         rolling ? "animate-tumble" : ""
-      } ${winner ? "ring-4 ring-emerald-400" : ""}`}
+      } ${winner ? "ring-4 ring-emerald-500 dark:ring-emerald-400" : ""}`}
     >
       {Array.from({ length: 9 }).map((_, i) => (
-        <span key={i} className={`m-auto rounded-full ${dotSize} ${dots.includes(i) ? "bg-slate-900" : "bg-transparent"}`} />
+        <span key={i} className={`m-auto rounded-full ${dotSize} ${dots.includes(i) ? "bg-stone-900" : "bg-transparent"}`} />
       ))}
     </div>
   );

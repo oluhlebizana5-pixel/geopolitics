@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { btnPrimary, input, link } from "@/lib/ui";
 import { signUp, friendlyError } from "@/lib/firebaseService";
 
 export default function SignupPage() {
@@ -33,18 +34,18 @@ export default function SignupPage() {
 
   return (
     <main className="mx-auto max-w-sm p-6">
-      <h1 className="mb-4 text-2xl font-bold">Create account</h1>
+      <h1 className="mb-4 text-2xl font-bold text-accent-foreground">Create account</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input className="rounded bg-slate-800 p-2" placeholder="Display name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <input className="rounded bg-slate-800 p-2" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input className="rounded bg-slate-800 p-2" type="password" placeholder="Password (6+ characters)" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <button disabled={busy} className="rounded bg-emerald-600 p-2 font-semibold disabled:opacity-50">
+        <input className={input} placeholder="Display name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input className={input} type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input className={input} type="password" placeholder="Password (6+ characters)" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button disabled={busy} className={btnPrimary}>
           {busy ? "Creating..." : "Sign up"}
         </button>
       </form>
       <p className="mt-4 text-sm">
-        Already have an account? <Link className="underline" href="/login">Log in</Link>
+        Already have an account? <Link className={link} href="/login">Log in</Link>
       </p>
     </main>
   );

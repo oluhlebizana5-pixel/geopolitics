@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Game } from "@/lib/classes/Game";
 import { LogEntry } from "@/lib/firebaseService";
-import { styleFor } from "@/lib/ui";
+import { card, muted, styleFor } from "@/lib/ui";
 
 const ICONS: Record<string, string> = {
   reinforce: "➕",
@@ -28,15 +28,15 @@ export default function LogPanel({ entries, game }: { entries: LogEntry[]; game:
   }, [entries.length]);
 
   return (
-    <section className="flex flex-col rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-      <h2 className="mb-2 font-semibold">📜 Game log &amp; NPC decisions</h2>
+    <section className={`flex flex-col ${card}`}>
+      <h2 className="mb-2 font-semibold text-accent-foreground">📜 Game log &amp; NPC decisions</h2>
       <div ref={box} className="h-80 space-y-1.5 overflow-y-auto pr-1 text-sm">
-        {entries.length === 0 && <p className="text-slate-400">Nothing has happened yet.</p>}
+        {entries.length === 0 && <p className={muted}>Nothing has happened yet.</p>}
         {entries.map((e) => {
           const style = styleFor(players.findIndex((p) => p.id === e.playerId));
-          const muted = e.type === "end_turn" || e.type === "battle_round";
+          const quiet = e.type === "end_turn" || e.type === "battle_round";
           return (
-            <div key={e.id} className={`flex gap-2 ${muted ? "text-slate-500" : ""}`}>
+            <div key={e.id} className={`flex gap-2 ${quiet ? "text-muted-foreground" : ""}`}>
               <span>{ICONS[e.type] ?? "•"}</span>
               <p>
                 <span className={`font-semibold ${style.text}`}>{e.playerName}: </span>

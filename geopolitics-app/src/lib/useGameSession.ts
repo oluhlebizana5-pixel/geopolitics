@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { Game } from "./classes/Game";
 import { NpcEvent, NpcStrategy } from "./classes/NpcStrategy";
-import { buildCommentaryRequest } from "./commentaryShared";
+import { buildCommentaryRequest, fallbackCommentary } from "./commentaryShared";
 import { fetchCommentary } from "./commentaryClient";
 import {
   LoadedGame,
@@ -24,7 +24,12 @@ import {
   subscribeToLog,
 } from "./firebaseService";
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Free AI keys only allow a few requests per minute. Ordinary rounds share one AI request
+// every few seconds; key moments (conquest, elimination, victory) always get an AI line.
+const MIN_GAP_MS = 7000;
+let lastAiCall = 0;
 
 // Fast-forward only shortens the pause. Every event is still saved, logged and shown.
 function pauseFor(event: NpcEvent, fast: boolean): number {
@@ -93,7 +98,16 @@ export function useGameSession(gameId: string) {
           .map((e) => e.commentary)
           .filter((c): c is string => !!c)
           .slice(-3);
-        void fetchCommentary(request)
+                const important = request.outcome !== "continue" || request.worldConquered || !!request.eliminatedPlayer;
+        const now = Date.now();
+        let job: Promise<{ commentary: string; source: "ai" | "fallback" }>;
+        if (important || now - lastAiCall >= MIN_GAP_MS) {
+          lastAiCall = now;
+          job = fetchCommentary(request);
+        } else {
+          job = Promise.resolve({ commentary: fallbackCommentary(request), source: "fallback" as const });
+        }
+        void job
           .then((r) => setLogCommentary(gameId, entryId, r.commentary, r.source))
           .catch(() => {
             /* commentary is optional: ignore failures */

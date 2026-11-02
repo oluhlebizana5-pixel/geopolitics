@@ -1,7 +1,7 @@
 "use client";
 
 import { Game } from "@/lib/classes/Game";
-import { styleFor } from "@/lib/ui";
+import { card, muted, styleFor } from "@/lib/ui";
 
 interface BoardProps {
   game: Game;
@@ -17,7 +17,7 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
   const current = game.status === "active" ? game.currentPlayer : null;
 
   return (
-    <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+    <section className={card}>
       {/* Player legend */}
       <ul className="mb-4 flex flex-wrap gap-2 text-xs">
         {players.map((p, i) => {
@@ -28,13 +28,13 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
             <li
               key={p.id}
               className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
-                isCurrent ? "border-white bg-slate-700" : "border-slate-600"
+                isCurrent ? "border-foreground bg-accent text-accent-foreground" : "border-border"
               } ${p.eliminated ? "opacity-40 line-through" : ""}`}
             >
               <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
               {isCurrent && <span>▶</span>}
               <span>{p.id === humanPlayerId ? `${p.name} (you)` : p.name}</span>
-              <span className="text-slate-400">{p.eliminated ? "out" : `${held} 🌍`}</span>
+              <span className={muted}>{p.eliminated ? "out" : `${held} 🌍`}</span>
             </li>
           );
         })}
@@ -50,18 +50,18 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
           const isTarget = c.code === targetCode;
           const fighting = fightingCodes.includes(c.code);
           const ring = isAttacker
-            ? "ring-2 ring-white"
+            ? "ring-2 ring-foreground"
             : isTarget
-            ? "ring-2 ring-rose-500"
+            ? "ring-2 ring-rose-600 dark:ring-rose-400"
             : fighting
-            ? "ring-2 ring-amber-300"
+            ? "ring-2 ring-amber-500 dark:ring-amber-300"
             : "";
           const className = `flex flex-col items-start rounded-lg border-2 p-3 text-left transition ${s.border} ${s.bg} ${ring} ${
-            onCountryClick ? "cursor-pointer hover:brightness-125" : ""
+            onCountryClick ? "cursor-pointer hover:brightness-95 dark:hover:brightness-125" : ""
           }`;
           const body = (
             <>
-              <span className="flex w-full items-center justify-between text-[11px] text-slate-400">
+              <span className="flex w-full items-center justify-between text-[11px] text-muted-foreground">
                 <span>{c.code}</span>
                 <span>{(c.population / 1_000_000).toLocaleString("en", { maximumFractionDigits: 1 })}m people</span>
               </span>
@@ -73,7 +73,7 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
                 <span key={c.soldiers} className="animate-pop text-3xl font-bold tabular-nums">
                   {c.soldiers}
                 </span>
-                <span className="text-xs text-slate-400">soldiers</span>
+                <span className="text-xs text-muted-foreground">soldiers</span>
               </span>
               {(isAttacker || isTarget) && (
                 <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide">

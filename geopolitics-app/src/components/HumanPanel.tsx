@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Game } from "@/lib/classes/Game";
 import { NpcEvent } from "@/lib/classes/NpcStrategy";
+import { btnAccent, btnDanger, btnPrimary, btnSecondary, input, inputSmall } from "@/lib/ui";
 import { attackRound, endHumanTurn, placeReinforcements, transferSoldiers } from "@/lib/classes/HumanActions";
 
 interface HumanPanelProps {
@@ -16,8 +17,7 @@ interface HumanPanelProps {
   onAction: (fn: (game: Game) => NpcEvent[]) => void;
 }
 
-const selectClass = "w-full rounded bg-slate-900 p-2 text-sm";
-const buttonClass = "rounded px-3 py-2 text-sm font-semibold disabled:opacity-40";
+const selectClass = input;
 
 export default function HumanPanel({
   game,
@@ -53,8 +53,8 @@ export default function HumanPanel({
   const maxTransfer = fromCountry ? fromCountry.soldiers - 1 : 0;
 
   return (
-    <section className="space-y-4 rounded-xl border-2 border-emerald-500 bg-slate-800/60 p-4">
-      <h2 className="text-lg font-bold text-emerald-300">🎮 Your turn</h2>
+    <section className="space-y-4 rounded-xl border-2 border-primary bg-card p-4 text-card-foreground shadow-sm">
+      <h2 className="text-lg font-bold text-accent-foreground">🎮 Your turn</h2>
 
       {/* 1. Reinforcements */}
       {pending > 0 && (
@@ -76,18 +76,18 @@ export default function HumanPanel({
               max={pending}
               value={reinforceAmount}
               onChange={(e) => setReinforceAmount(Number(e.target.value))}
-              className="w-20 rounded bg-slate-900 p-2 text-sm"
+              className={inputSmall}
             />
             <button
               disabled={busy}
-              className={`${buttonClass} bg-emerald-600`}
+              className={btnPrimary}
               onClick={() => onAction((g) => placeReinforcements(g, reinforceCountry, Math.min(Math.max(1, Math.floor(reinforceAmount) || 1), pending)))}
             >
               Place
             </button>
             <button
               disabled={busy}
-              className={`${buttonClass} bg-emerald-800`}
+              className={btnSecondary}
               onClick={() => onAction((g) => placeReinforcements(g, reinforceCountry, pending))}
             >
               Place all {pending}
@@ -101,30 +101,30 @@ export default function HumanPanel({
         <h3 className="text-sm font-semibold">Attack</h3>
         {battle ? (
           <>
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-foreground">
               Attack in progress: <b>{game.getCountry(battle.attackerCode).name}</b> ({game.getCountry(battle.attackerCode).soldiers}) vs{" "}
               <b>{game.getCountry(battle.defenderCode).name}</b> ({game.getCountry(battle.defenderCode).soldiers})
             </p>
             <div className="flex flex-wrap gap-2">
               <button
                 disabled={busy}
-                className={`${buttonClass} bg-rose-600`}
+                className={btnDanger}
                 onClick={() => onAction((g) => attackRound(g, battle.attackerCode, battle.defenderCode))}
               >
                 🎲 Roll again
               </button>
-              <button disabled={busy} className={`${buttonClass} bg-slate-600`} onClick={() => onAction((g) => endHumanTurn(g))}>
+              <button disabled={busy} className={btnSecondary} onClick={() => onAction((g) => endHumanTurn(g))}>
                 ✋ Stop attack &amp; end turn
               </button>
             </div>
           </>
         ) : attackUsed ? (
-          <p className="text-sm text-slate-400">Your attack for this turn is over. You can still move soldiers, then end your turn.</p>
+          <p className="text-sm text-muted-foreground">Your attack for this turn is over. You can still move soldiers, then end your turn.</p>
         ) : attackers.length === 0 ? (
-          <p className="text-sm text-slate-400">No country has 2 or more soldiers, so you cannot attack this turn.</p>
+          <p className="text-sm text-muted-foreground">No country has 2 or more soldiers, so you cannot attack this turn.</p>
         ) : (
           <>
-            <label className="block text-xs text-slate-400">
+            <label className="block text-xs text-muted-foreground">
               Attack from
               <select className={selectClass} value={attacker} onChange={(e) => setAttackerCode(e.target.value)}>
                 {attackers.map((c) => (
@@ -134,7 +134,7 @@ export default function HumanPanel({
                 ))}
               </select>
             </label>
-            <label className="block text-xs text-slate-400">
+            <label className="block text-xs text-muted-foreground">
               Target
               <select className={selectClass} value={target} onChange={(e) => setTargetCode(e.target.value)}>
                 {enemies.map((c) => (
@@ -146,12 +146,12 @@ export default function HumanPanel({
             </label>
             <button
               disabled={busy || pending > 0 || !attacker || !target}
-              className={`${buttonClass} bg-rose-600`}
+              className={btnDanger}
               onClick={() => onAction((g) => attackRound(g, attacker, target))}
             >
               ⚔ Attack
             </button>
-            {pending > 0 && <p className="text-xs text-amber-300">Place all your new soldiers first.</p>}
+            {pending > 0 && <p className="text-xs text-amber-700 dark:text-amber-300">Place all your new soldiers first.</p>}
           </>
         )}
       </div>
@@ -185,16 +185,16 @@ export default function HumanPanel({
               max={Math.max(1, maxTransfer)}
               value={transferAmount}
               onChange={(e) => setTransferAmount(Number(e.target.value))}
-              className="w-20 rounded bg-slate-900 p-2 text-sm"
+              className={inputSmall}
             />
             <button
               disabled={busy || maxTransfer < 1 || !to}
-              className={`${buttonClass} bg-sky-600`}
+              className={btnPrimary}
               onClick={() => onAction((g) => transferSoldiers(g, from, to, Math.max(1, Math.floor(transferAmount) || 1)))}
             >
               Move
             </button>
-            <span className="text-xs text-slate-400">max {Math.max(0, maxTransfer)} (one soldier must stay)</span>
+            <span className="text-xs text-muted-foreground">max {Math.max(0, maxTransfer)} (one soldier must stay)</span>
           </div>
         </div>
       )}
@@ -204,12 +204,12 @@ export default function HumanPanel({
         <div>
           <button
             disabled={busy || pending > 0}
-            className={`${buttonClass} w-full bg-amber-600`}
+            className={`${btnAccent} w-full`}
             onClick={() => onAction((g) => endHumanTurn(g))}
           >
             {attackUsed ? "End turn" : "Skip attack & end turn"}
           </button>
-          {pending > 0 && <p className="mt-1 text-xs text-amber-300">Place all your new soldiers before ending your turn.</p>}
+          {pending > 0 && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Place all your new soldiers before ending your turn.</p>}
         </div>
       )}
     </section>

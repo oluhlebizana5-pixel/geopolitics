@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Game } from "@/lib/classes/Game";
 import { LogEntry } from "@/lib/firebaseService";
 import { DieFace } from "./Dice";
+import { banner, card, muted } from "@/lib/ui";
 
 interface BattlePanelProps {
   entry: LogEntry | null; // the most recent battle round
@@ -44,9 +45,9 @@ export default function BattlePanel({ entry, game, fast }: BattlePanelProps) {
 
   if (!entry || !entry.result) {
     return (
-      <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-        <h2 className="mb-1 font-semibold">⚔ Battle</h2>
-        <p className="text-sm text-slate-400">No battles yet. When an attack starts, the dice appear here.</p>
+      <section className={card}>
+        <h2 className="mb-1 font-semibold text-accent-foreground">⚔ Battle</h2>
+        <p className={`text-sm ${muted}`}>No battles yet. When an attack starts, the dice appear here.</p>
       </section>
     );
   }
@@ -57,14 +58,14 @@ export default function BattlePanel({ entry, game, fast }: BattlePanelProps) {
   const { attackerLosses, defenderLosses } = entry.result.round;
 
   return (
-    <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-      <h2 className="mb-3 font-semibold">⚔ Battle</h2>
+    <section className={card}>
+      <h2 className="mb-3 font-semibold text-accent-foreground">⚔ Battle</h2>
       <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-semibold text-rose-300">
-          {attackerName} <span className="font-normal text-slate-400">({entry.playerName})</span>
+        <span className="font-semibold text-rose-700 dark:text-rose-300">
+          {attackerName} <span className="font-normal text-muted-foreground">({entry.playerName})</span>
         </span>
-        <span className="text-slate-500">vs</span>
-        <span className="font-semibold text-sky-300">{defenderName}</span>
+        <span className="text-muted-foreground">vs</span>
+        <span className="font-semibold text-sky-700 dark:text-sky-300">{defenderName}</span>
       </div>
 
       <div className="mb-3 flex flex-col items-center gap-2">
@@ -77,7 +78,7 @@ export default function BattlePanel({ entry, game, fast }: BattlePanelProps) {
               value={rolling ? faces.a[i] ?? 1 : pair.attackerRoll}
               winner={!rolling && pair.winner === "attacker"}
             />
-            <span className="w-10 text-center text-xs text-slate-400">
+            <span className="w-10 text-center text-xs text-muted-foreground">
               {rolling ? "…" : pair.winner === "tie" ? "tie" : pair.winner === "attacker" ? "◀ wins" : "wins ▶"}
             </span>
             <DieFace
@@ -93,18 +94,18 @@ export default function BattlePanel({ entry, game, fast }: BattlePanelProps) {
 
       <p className="text-center text-sm">
         {rolling ? (
-          <span className="text-slate-400">Rolling…</span>
+          <span className="text-muted-foreground">Rolling…</span>
         ) : (
           <>
-            <span className="text-rose-300">{attackerName} lost {attackerLosses}</span>
+            <span className="text-rose-700 dark:text-rose-300">{attackerName} lost {attackerLosses}</span>
             {" · "}
-            <span className="text-sky-300">{defenderName} lost {defenderLosses}</span>
+            <span className="text-sky-700 dark:text-sky-300">{defenderName} lost {defenderLosses}</span>
           </>
         )}
       </p>
 
       {entry.commentary && !rolling && (
-        <p className="mt-3 rounded-lg bg-slate-900/70 p-3 text-sm italic text-amber-200">🎙 {entry.commentary}</p>
+        <p className={`mt-3 italic ${banner.gold}`}>🎙 {entry.commentary}</p>
       )}
     </section>
   );
