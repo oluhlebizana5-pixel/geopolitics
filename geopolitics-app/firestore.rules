@@ -1,0 +1,229 @@
+rules_version = '2';
+
+// Firestore security rules for the Geopolitics game.
+//
+//   * Anyone (even a visitor who is not signed in) can READ games and their logs.
+//   * Only the signed-in OWNER of a game can change it, and nobody can delete one.
+//   * Every save is VALIDATED, so a player cannot edit soldier counts or ownership
+//     directly in the database. The same checks exist in TypeScript in
+//     src/lib/gameWriteRules.ts, where they are unit-tested (npm test), and the
+//     rules themselves are tested against the Firebase emulator (npm run test:rules).
+//
+// Honest limit: rules cannot re-roll dice. They prove a save is a LEGAL step (soldiers
+// only appear through reinforcements, conquests give the exact reward, turns pass
+// correctly, finished games are frozen) but not that a dice result was fair.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwnerOf(game) {
+      return signedIn() && request.auth.uid == game.ownerUid;
+    }
+
+    // ---------- small helpers over a game document ----------
+    function heldBy(d, pid) {
+      return (d.countries[0].ownerId == pid ? 1 : 0) + 
+      (d.countries[1].ownerId == pid ? 1 : 0) + 
+      (d.countries[2].ownerId == pid ? 1 : 0) + 
+      (d.countries[3].ownerId == pid ? 1 : 0) + 
+      (d.countries[4].ownerId == pid ? 1 : 0) + 
+      (d.countries[5].ownerId == pid ? 1 : 0) + 
+      (d.countries[6].ownerId == pid ? 1 : 0) + 
+      (d.countries[7].ownerId == pid ? 1 : 0) + 
+      (d.countries[8].ownerId == pid ? 1 : 0) + 
+      (d.countries[9].ownerId == pid ? 1 : 0);
+    }
+    function ownerChanges(o, n) {
+      return (o.countries[0].ownerId != n.countries[0].ownerId ? 1 : 0) + 
+      (o.countries[1].ownerId != n.countries[1].ownerId ? 1 : 0) + 
+      (o.countries[2].ownerId != n.countries[2].ownerId ? 1 : 0) + 
+      (o.countries[3].ownerId != n.countries[3].ownerId ? 1 : 0) + 
+      (o.countries[4].ownerId != n.countries[4].ownerId ? 1 : 0) + 
+      (o.countries[5].ownerId != n.countries[5].ownerId ? 1 : 0) + 
+      (o.countries[6].ownerId != n.countries[6].ownerId ? 1 : 0) + 
+      (o.countries[7].ownerId != n.countries[7].ownerId ? 1 : 0) + 
+      (o.countries[8].ownerId != n.countries[8].ownerId ? 1 : 0) + 
+      (o.countries[9].ownerId != n.countries[9].ownerId ? 1 : 0);
+    }
+    // Net soldiers gained by the current player's own, unconquered countries
+    function gain(o, n, i) {
+      return (o.countries[i].ownerId == n.countries[i].ownerId && o.countries[i].ownerId == o.currentPlayerId)
+        ? n.countries[i].soldiers - o.countries[i].soldiers : 0;
+    }
+    function totalGain(o, n) {
+      return gain(o, n, 0) + 
+      gain(o, n, 1) + 
+      gain(o, n, 2) + 
+      gain(o, n, 3) + 
+      gain(o, n, 4) + 
+      gain(o, n, 5) + 
+      gain(o, n, 6) + 
+      gain(o, n, 7) + 
+      gain(o, n, 8) + 
+      gain(o, n, 9);
+    }
+
+    // ---------- one country ----------
+    // conquest reward = max(2, floor(defenderStart / 2)), written without division
+    function rewardOk(start, soldiers) {
+      return (start < 6 && soldiers == 2) || (start >= 6 && soldiers * 2 <= start && start < soldiers * 2 + 2);
+    }
+    function sameOwnerOk(o, oc, nc) {
+      return nc.soldiers >= 1 &&
+        (oc.ownerId == o.currentPlayerId ||
+          (nc.soldiers <= oc.soldiers && nc.soldiers >= oc.soldiers - 9));
+    }
+    function conquestOk(o, oc, nc) {
+      return nc.ownerId == o.currentPlayerId &&
+        oc.ownerId != o.currentPlayerId &&
+        rewardOk(o.battle != null ? o.battle.defenderStartSoldiers : oc.soldiers, nc.soldiers);
+    }
+    function countryOk(o, n, i) {
+      return n.countries[i].code == o.countries[i].code &&
+        n.countries[i].population == o.countries[i].population &&
+        n.countries[i].soldiers is int &&
+        n.countries[i].soldiers >= 0 && n.countries[i].soldiers <= 10000 &&
+        (n.countries[i].ownerId == o.countries[i].ownerId
+          ? sameOwnerOk(o, o.countries[i], n.countries[i])
+          : conquestOk(o, o.countries[i], n.countries[i]));
+    }
+
+    // ---------- one player ----------
+    function playerOk(o, n, i) {
+      return (!o.players[i].eliminated || n.players[i].eliminated) &&
+        (o.players[i].eliminated || !n.players[i].eliminated || heldBy(n, n.players[i].id) == 0);
+    }
+
+    // ---------- whole-game checks ----------
+    function identityOk(o, n) {
+      return n.ownerUid == o.ownerUid &&
+        n.humanPlayerId == o.humanPlayerId &&
+        n.turnOrder == o.turnOrder &&
+        n.countries.size() == 10 && n.players.size() == 10;
+    }
+    function turnOk(o, n) {
+      return o.pendingReinforcements == 0 &&
+        n.battle == null && n.attackUsed == false &&
+        (n.currentPlayerId in o.turnOrder) &&
+        heldBy(n, n.currentPlayerId) >= 1 &&
+        (n.status != 'active' ||
+          n.pendingReinforcements == (n.round >= 2 ? 2 * heldBy(n, n.currentPlayerId) : 0));
+    }
+    function sameTurnOk(o, n) {
+      return n.pendingReinforcements >= 0 &&
+        n.pendingReinforcements <= o.pendingReinforcements &&
+        (!o.attackUsed || n.attackUsed) &&
+        (o.battle == null || n.battle == null || o.battle == n.battle);
+    }
+    function winOk(o, n) {
+      return n.status == 'finished'
+        ? (n.winnerId == o.currentPlayerId && heldBy(n, n.winnerId) == 10)
+        : (n.status == 'active' && n.winnerId == null);
+    }
+    function activeUpdateOk(o, n) {
+      return countryOk(o, n, 0) &&
+    countryOk(o, n, 1) &&
+    countryOk(o, n, 2) &&
+    countryOk(o, n, 3) &&
+    countryOk(o, n, 4) &&
+    countryOk(o, n, 5) &&
+    countryOk(o, n, 6) &&
+    countryOk(o, n, 7) &&
+    countryOk(o, n, 8) &&
+    countryOk(o, n, 9) &&
+        playerOk(o, n, 0) &&
+    playerOk(o, n, 1) &&
+    playerOk(o, n, 2) &&
+    playerOk(o, n, 3) &&
+    playerOk(o, n, 4) &&
+    playerOk(o, n, 5) &&
+    playerOk(o, n, 6) &&
+    playerOk(o, n, 7) &&
+    playerOk(o, n, 8) &&
+    playerOk(o, n, 9) &&
+        ownerChanges(o, n) <= 1 &&
+        totalGain(o, n) <= (n.currentPlayerId != o.currentPlayerId ? 0 : o.pendingReinforcements - n.pendingReinforcements) &&
+        (n.round == o.round || (n.round == o.round + 1 && n.currentPlayerId != o.currentPlayerId)) &&
+        (n.currentPlayerId != o.currentPlayerId ? turnOk(o, n) : sameTurnOk(o, n)) &&
+        winOk(o, n);
+    }
+    // A finished game is frozen (saving the identical result again is harmless)
+    function frozenOk(o, n) {
+      return n.status == 'finished' && n.winnerId == o.winnerId && n.round == o.round &&
+        n.countries == o.countries && n.players == o.players;
+    }
+    function updateOk(o, n) {
+      return isOwnerOf(o) && identityOk(o, n) &&
+        (o.status == 'finished' ? frozenOk(o, n) : activeUpdateOk(o, n));
+    }
+
+    // ---------- creating a game ----------
+    function startCountryOk(n, i) {
+      return n.countries[i].soldiers is int &&
+        n.countries[i].soldiers >= 1 && n.countries[i].soldiers <= 9 &&
+        n.countries[i].ownerId == 'player-' + n.countries[i].code;
+    }
+    function createOk(n) {
+      return n.ownerUid == request.auth.uid &&
+        n.humanPlayerId is string &&
+        n.status == 'active' && n.round == 1 &&
+        n.winnerId == null && n.battle == null &&
+        n.attackUsed == false && n.pendingReinforcements == 0 &&
+        n.countries.size() == 10 && n.players.size() == 10 && n.turnOrder.size() == 10 &&
+        (n.currentPlayerId in n.turnOrder) &&
+        startCountryOk(n, 0) &&
+    startCountryOk(n, 1) &&
+    startCountryOk(n, 2) &&
+    startCountryOk(n, 3) &&
+    startCountryOk(n, 4) &&
+    startCountryOk(n, 5) &&
+    startCountryOk(n, 6) &&
+    startCountryOk(n, 7) &&
+    startCountryOk(n, 8) &&
+    startCountryOk(n, 9) &&
+        n.players[0].eliminated == false &&
+    n.players[1].eliminated == false &&
+    n.players[2].eliminated == false &&
+    n.players[3].eliminated == false &&
+    n.players[4].eliminated == false &&
+    n.players[5].eliminated == false &&
+    n.players[6].eliminated == false &&
+    n.players[7].eliminated == false &&
+    n.players[8].eliminated == false &&
+    n.players[9].eliminated == false;
+    }
+
+    // ---------- the collections ----------
+    match /games/{gameId} {
+      allow read: if true;
+      allow create: if signedIn() && createOk(request.resource.data);
+      allow update: if updateOk(resource.data, request.resource.data);
+      allow delete: if false;
+
+      // The game log (one document per event). Written by the owner; the AI commentary
+      // can be attached to an existing entry later, but nothing else can be edited.
+      match /log/{entryId} {
+        allow read: if true;
+        allow create: if isOwnerOf(get(/databases/$(database)/documents/games/$(gameId)).data) &&
+          request.resource.data.type is string &&
+          request.resource.data.playerId is string &&
+          request.resource.data.playerName is string &&
+          request.resource.data.message is string &&
+          request.resource.data.message.size() <= 2000;
+        allow update: if isOwnerOf(get(/databases/$(database)/documents/games/$(gameId)).data) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentary', 'commentarySource']) &&
+          (!('commentary' in request.resource.data) ||
+            (request.resource.data.commentary is string && request.resource.data.commentary.size() <= 2000));
+        allow delete: if false;
+      }
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

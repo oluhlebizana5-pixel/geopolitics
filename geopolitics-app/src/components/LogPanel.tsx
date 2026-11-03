@@ -5,6 +5,7 @@ import { Game } from "@/lib/classes/Game";
 import { LogEntry } from "@/lib/firebaseService";
 import { card, muted } from "@/lib/ui";
 import { playerFlagCode } from "@/lib/flags";
+import { personalityFor } from "@/lib/classes/NpcStrategy";
 import Flag from "./Flag";
 
 const ICONS: Record<string, string> = {
@@ -19,7 +20,8 @@ const ICONS: Record<string, string> = {
   victory: "👑",
 };
 
-export default function LogPanel({ entries }: { entries: LogEntry[]; game?: Game }) {
+export default function LogPanel({ entries, game }: { entries: LogEntry[]; game?: Game }) {
+  const players = game?.allPlayers ?? [];
   const box = useRef<HTMLDivElement>(null);
 
   // Keep the newest entry in view (scrolls the log box only, not the page)
@@ -35,12 +37,17 @@ export default function LogPanel({ entries }: { entries: LogEntry[]; game?: Game
         {entries.length === 0 && <p className={muted}>Nothing has happened yet.</p>}
         {entries.map((e) => {
           const quiet = e.type === "end_turn" || e.type === "battle_round";
+          const isNpc = players.some((p) => p.id === e.playerId && p.isNpc);
+          const persona = isNpc ? personalityFor(players, e.playerId) : null;
           return (
             <div key={e.id} className={`flex gap-2 ${quiet ? "text-muted-foreground" : ""}`}>
               <span>{ICONS[e.type] ?? "•"}</span>
               <p>
                 <Flag code={playerFlagCode(e.playerId)} size={14} className="mr-1 align-[-2px]" />
-                <span className="font-semibold text-foreground">{e.playerName}: </span>
+                <span className="font-semibold text-foreground">
+                  {e.playerName}
+                  {persona && <span title={`${persona.name}: ${persona.tagline}`}> {persona.emoji} {persona.name}</span>}:{" "}
+                </span>
                 {e.message}
               </p>
             </div>

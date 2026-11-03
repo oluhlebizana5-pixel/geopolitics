@@ -1,0 +1,58 @@
+erDiagram
+    AUTH_USER ||--o{ GAME : "owns (ownerUid)"
+    GAME ||--|{ PLAYER : "embeds 10"
+    GAME ||--|{ COUNTRY : "embeds 10"
+    GAME ||--o| BATTLE : "embeds 0 or 1"
+    GAME ||--o{ LOG_ENTRY : "subcollection games/id/log"
+    PLAYER ||--o{ COUNTRY : "controls (ownerId)"
+    PLAYER ||--o{ LOG_ENTRY : "acts in (playerId)"
+
+    AUTH_USER {
+        string uid PK "Firebase Authentication"
+        string email
+    }
+    GAME {
+        string id PK "document id"
+        string ownerUid FK
+        string ownerName
+        string humanPlayerId
+        string status "active or finished"
+        int round
+        string currentPlayerId
+        string_array turnOrder
+        string winnerId "null until finished"
+        int pendingReinforcements
+        bool attackUsed
+        timestamp updatedAt
+    }
+    PLAYER {
+        string id "player-CODE"
+        string name
+        bool isNpc
+        bool eliminated
+    }
+    COUNTRY {
+        string code "3-letter, e.g. ZAF"
+        string name
+        int population
+        string ownerId FK
+        int soldiers
+    }
+    BATTLE {
+        string attackerCode
+        string defenderCode
+        int defenderStartSoldiers
+    }
+    LOG_ENTRY {
+        string id PK "document id"
+        string type
+        string playerId FK
+        string playerName
+        string message "the NPC's visible reasoning"
+        string attackerCode
+        string defenderCode
+        json result "dice and losses"
+        string commentary "AI battle commentary"
+        string commentarySource "ai or fallback"
+        timestamp createdAt
+    }

@@ -3,15 +3,41 @@ import { Country } from "./Country";
 import { BattleEngine } from "./BattleEngine";
 import { conquestReward } from "./rules";
 
-// ---------- NPC personalities (same strategy, different thresholds) ----------
+// ---------- NPC personalities (same strategy, different behaviour) ----------
 export interface NpcProfile {
   name: string;
+  emoji: string; // shown next to the NPC in the UI
+  tagline: string; // one-line description shown in the UI
   minWinChance: number; // only start an attack if win chance is at least this
   stopBelow: number; // stop an ongoing attack if win chance drops below this
+  reinforceTo: "strongest" | "weakest"; // where new soldiers are placed
+  rivalBonus: number; // extra score for an attack that eliminates a rival player
 }
-export const BALANCED: NpcProfile = { name: "Balanced", minWinChance: 0.5, stopBelow: 0.3 };
-export const AGGRESSIVE: NpcProfile = { name: "Aggressive", minWinChance: 0.35, stopBelow: 0.15 };
-export const CAUTIOUS: NpcProfile = { name: "Cautious", minWinChance: 0.7, stopBelow: 0.45 };
+export const BALANCED: NpcProfile = {
+  name: "Balanced", emoji: "⚖️", tagline: "Takes fair fights and adapts to the odds.",
+  minWinChance: 0.5, stopBelow: 0.3, reinforceTo: "strongest", rivalBonus: 1.5,
+};
+export const AGGRESSIVE: NpcProfile = {
+  name: "Aggressive", emoji: "🔥", tagline: "Attacks on poor odds and rarely retreats.",
+  minWinChance: 0.35, stopBelow: 0.15, reinforceTo: "strongest", rivalBonus: 1.5,
+};
+export const CAUTIOUS: NpcProfile = {
+  name: "Cautious", emoji: "🛡️", tagline: "Only attacks near-certain wins, retreats early.",
+  minWinChance: 0.7, stopBelow: 0.45, reinforceTo: "weakest", rivalBonus: 1.5,
+};
+export const OPPORTUNIST: NpcProfile = {
+  name: "Opportunist", emoji: "🦅", tagline: "Hunts weakened rivals to knock them out of the game.",
+  minWinChance: 0.45, stopBelow: 0.25, reinforceTo: "strongest", rivalBonus: 6,
+};
+export const PERSONALITIES: NpcProfile[] = [AGGRESSIVE, CAUTIOUS, OPPORTUNIST, BALANCED];
+
+// Each NPC always gets the same personality in a given game, so it survives a reload
+// without having to be stored in the database.
+export function personalityFor(players: { id: string; isNpc: boolean }[], playerId: string): NpcProfile {
+  const npcIds = players.filter((p) => p.isNpc).map((p) => p.id).sort();
+  const i = npcIds.indexOf(playerId);
+  return i < 0 ? BALANCED : PERSONALITIES[i % PERSONALITIES.length];
+}
 
 // ---------- One visible decision / action (shown in the UI log) ----------
 export type NpcEventType =
@@ -76,6 +102,14 @@ export class NpcStrategy {
     if (amount < 1) return null;
     const mine = game.countriesOf(playerId);
     if (mine.length === 0) return null;
+    if (this.profile.reinforceTo === "weakest") {
+      const weakest = [...mine].sort((a, b) => a.soldiers - b.soldiers)[0];
+      return {
+        code: weakest.code,
+        amount,
+        reason: `Placing all ${amount} new soldiers on ${weakest.name} (${weakest.soldiers} soldiers), my weakest country, so I am hard to attack.`,
+      };
+    }
     const strongest = [...mine].sort((a, b) => b.soldiers - a.soldiers)[0];
     return {
       code: strongest.code,
@@ -105,7 +139,7 @@ export class NpcStrategy {
         const winsGame = targets.length === 1;
 
         let score = chance * (reward + 1);
-        if (eliminates) score += chance * 1.5; // removing a rival is valuable
+        if (eliminates) score += chance * this.profile.rivalBonus; // removing a rival is valuable
         if (winsGame) score += chance * 10; // conquering the world
         if (!best || score > best.score) best = { a, d, chance, score, eliminates, reward };
       }

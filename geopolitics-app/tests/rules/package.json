@@ -1,0 +1,8 @@
+{
+  "name": "geopolitics-rules-tests",
+  "private": true,
+  "description": "Separate from the main app so its install never affects the Vercel build. Installed automatically by `npm run test:rules`.",
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2"
+  }
+}

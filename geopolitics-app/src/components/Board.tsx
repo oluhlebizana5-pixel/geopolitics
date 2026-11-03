@@ -4,6 +4,7 @@ import { Game } from "@/lib/classes/Game";
 import { card, muted } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import { playerFlagCode } from "@/lib/flags";
+import { personalityFor } from "@/lib/classes/NpcStrategy";
 import Flag from "./Flag";
 
 interface BoardProps {
@@ -26,6 +27,7 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
         {players.map((p) => {
           const held = game.countriesOf(p.id).length;
           const isCurrent = current?.id === p.id;
+          const persona = p.isNpc ? personalityFor(players, p.id) : null;
           return (
             <li
               key={p.id}
@@ -38,11 +40,43 @@ export default function Board({ game, humanPlayerId, attackerCode, targetCode, f
               <Flag code={playerFlagCode(p.id)} size={20} />
               {isCurrent && <span>▶</span>}
               <span>{p.id === humanPlayerId ? `${p.name} (you)` : p.name.replace(" (NPC)", "")}</span>
+              {persona && (
+                <span title={`${persona.name}: ${persona.tagline}`} aria-label={persona.name}>
+                  {persona.emoji}
+                </span>
+              )}
               <span className={isCurrent ? "opacity-70" : muted}>{p.eliminated ? "out" : `${held}`}</span>
             </li>
           );
         })}
       </ul>
+
+      {/* Who is each NPC? Every NPC plays with its own personality. */}
+      <details className="mb-4 text-sm">
+        <summary className="cursor-pointer font-semibold">Meet the NPC leaders</summary>
+        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+          {players
+            .filter((p) => p.isNpc)
+            .map((p) => {
+              const persona = personalityFor(players, p.id);
+              return (
+                <li key={p.id} className="flex items-start gap-2 rounded-2xl border border-border p-2">
+                  <Flag code={playerFlagCode(p.id)} size={20} />
+                  <div>
+                    <p className="font-semibold">
+                      {p.name.replace(" (NPC)", "")} <span className={muted}>{persona.emoji} {persona.name}</span>
+                    </p>
+                    <p className={muted}>{persona.tagline}</p>
+                    <p className={muted}>
+                      Attacks at {Math.round(persona.minWinChance * 100)}%+ odds, retreats below{" "}
+                      {Math.round(persona.stopBelow * 100)}%, reinforces its {persona.reinforceTo} country.
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+        </ul>
+      </details>
 
       {/* The 10 countries */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

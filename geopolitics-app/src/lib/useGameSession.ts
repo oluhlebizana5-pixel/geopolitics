@@ -124,9 +124,9 @@ export function useGameSession(gameId: string) {
     runningRef.current = true;
     setNpcRunning(true);
     try {
-      const strategy = new NpcStrategy();
       const game = Game.fromJSON(start.game.toJSON()); // private working copy
       while (aliveRef.current && game.status === "active" && game.currentPlayer.isNpc) {
+          const strategy = new NpcStrategy(personalityFor(game.allPlayers, game.currentPlayer.id));
         for (const event of strategy.playTurn(game)) {
           // Save after EVERY step so viewers see it live and a refresh can resume.
           const [, ids] = await Promise.all([saveGame(gameId, game), addLogEntries(gameId, [event])]);
