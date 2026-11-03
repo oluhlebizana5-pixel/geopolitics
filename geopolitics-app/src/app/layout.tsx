@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
 import "flag-icons/css/flag-icons.min.css";
@@ -24,7 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {themeScript}
         </Script>
         <AuthProvider>
-          <NavBar />
+          <Suspense fallback={<div className="h-[76px]" />}>
+            <NavBar />
+          </Suspense>
           {children}
           <Footer />
           <TourGuide />
