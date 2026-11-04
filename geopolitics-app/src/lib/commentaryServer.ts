@@ -96,7 +96,7 @@ export function buildUserPrompt(req: CommentaryRequest): string {
 const DEFAULT_MODELS: Record<Provider, string> = {
   anthropic: "claude-haiku-5-5",
   openai: "gpt-4o-mini",
-  gemini: "gemini-2.5-flash",
+  gemini: "gemini-flash-lite-latest",
 };
 const KEY_NAMES: Record<Provider, string> = {
   anthropic: "ANTHROPIC_API_KEY",
@@ -115,7 +115,7 @@ export function pickProvider(env: Env): Provider | null {
 
 async function callProvider(provider: Provider, env: Env, userPrompt: string, fetchFn: FetchFn): Promise<string> {
   const key = env[KEY_NAMES[provider]] as string;
-  const model = env.COMMENTARY_MODEL || DEFAULT_MODELS[provider];
+  const model = DEFAULT_MODELS[provider];
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12000);
 
