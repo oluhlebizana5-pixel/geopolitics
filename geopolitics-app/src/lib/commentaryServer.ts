@@ -96,7 +96,7 @@ export function buildUserPrompt(req: CommentaryRequest): string {
 const DEFAULT_MODELS: Record<Provider, string> = {
   anthropic: "claude-haiku-5-5",
   openai: "gpt-4o-mini",
-  gemini: "gemini-flash-lite-latest",
+  gemini: "gemini-3.6-flash",
 };
 const KEY_NAMES: Record<Provider, string> = {
   anthropic: "ANTHROPIC_API_KEY",
