@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { Game } from "./classes/Game";
-import { NpcEvent, NpcStrategy } from "./classes/NpcStrategy";
+import { NpcEvent, NpcStrategy, personalityFor } from "./classes/NpcStrategy";
 import { buildCommentaryRequest, fallbackCommentary } from "./commentaryShared";
 import { fetchCommentary } from "./commentaryClient";
 import {

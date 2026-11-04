@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateCommentary, parseRequest } from "@/lib/commentaryServer";
 import { allowRequest, verifyIdToken } from "@/lib/serverAuth";
-
+export const maxDuration = 30;
 // POST /api/commentary
 // Body: the facts about one dice round. Header: Authorization: Bearer <Firebase ID token>
 export async function POST(request: Request) {

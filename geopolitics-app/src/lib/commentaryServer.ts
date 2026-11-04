@@ -117,7 +117,7 @@ async function callProvider(provider: Provider, env: Env, userPrompt: string, fe
   const key = env[KEY_NAMES[provider]] as string;
   const model = env.COMMENTARY_MODEL || DEFAULT_MODELS[provider];
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 9000);
+  const timer = setTimeout(() => controller.abort(), 12000);
 
   try {
     let res: Response;
