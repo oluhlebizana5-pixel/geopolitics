@@ -147,12 +147,15 @@ async function callProvider(provider: Provider, env: Env, userPrompt: string, fe
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
           contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-          generationConfig: { maxOutputTokens: 200, temperature: 0.9, thinkingConfig: { thinkingBudget: 0 } },
+          generationConfig: { maxOutputTokens: 1024, temperature: 0.9 },
         }),
       });
     }
 
-    if (!res.ok) throw new Error(`${provider} returned HTTP ${res.status}`);
+     if (!res.ok) {
+  const detail = (await res.text()).slice(0, 300);
+  throw new Error(`${provider} returned HTTP ${res.status}: ${detail}`);
+}
     const data = await res.json();
     const out =
       provider === "anthropic"
