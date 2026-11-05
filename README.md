@@ -5,7 +5,7 @@ the world with dice, reinforcements and conquests. Every NPC decision is shown w
 reasoning, battles get live AI commentary, and anybody can watch a game, but only its owner can
 play it.
 
-**Live site:** https://geopolitics-u3jz-ldut7p8ml-oluhle.vercel.app/
+**Live site:** https://geopolitics-u3jz.vercel.app/
 **Source code:** https://github.com/oluhlebizana5-pixel/geopolitics
 
 > Built for the UCT Honours INF4001N entrance task.
@@ -14,8 +14,8 @@ play it.
 
 | | |
 |---|---|
-| E-mail | **EDIT: demo account e-mail** |
-| Password | **EDIT: demo account password** |
+| E-mail | **linashasha@gmail.com** |
+| Password | **linashasha** |
 
 Anybody can also create their own account on the Sign Up page. Visitors who are not signed in can
 still browse every game, watch it live, and see the statistics.
