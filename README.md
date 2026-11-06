@@ -174,21 +174,13 @@ game documents, so they can never disagree with the games.
 
 ## Security and validation
 
-* **Public viewing, owner-only play.** Firestore rules allow anyone to read a game and its log,
-  but only the signed-in owner may change it, and nobody may delete a game.
-* **Validated saves.** `firestore.rules` checks every save against the previous version of the
-  document, so editing the database directly cannot change soldier counts or ownership. Soldiers
-  only appear through reinforcements, enemy countries can never gain soldiers, a country only
-  changes owner through a conquest with exactly the allowed reward, eliminated players cannot
-  return, the turn only moves on correctly with the right reinforcements, a win requires all 10
-  countries, and a finished game is frozen. Log entries cannot be edited or removed, apart from
-  attaching AI commentary.
+* **Public viewing, owner-only play.** The deployed Firestore rules allow anyone to read a game and its log, and only the signed-in owner to change it.
+**Stricter validation rules (provided, not yet deployed).** firestore.rules in this repository goes further: it checks every save against the previous version of the game, so soldier counts and ownership cannot be edited directly. The same checks exist in TypeScript (src/lib/gameWriteRules.ts) and are covered by unit tests (npm test), and emulator tests for the rules file are included (npm run test:rules). These stricter rules have not been published to the live project.
 * **Engine validation.** The game engine rejects every illegal move with a clear message (invalid
   amounts, wrong owner, second attack, etc.) before anything is saved.
 * **Secrets.** The AI key is only used by `/api/commentary`, which checks the caller's Firebase ID
   token and applies a per-user rate limit.
-* **Tests.** The rules are tested in TypeScript (`src/lib/gameWriteRules.ts`) and against the
-  Firebase emulator, including about 20 kinds of forged writes.
+* **Tests.** The rule logic is tested in TypeScript (npm test). Emulator tests for firestore.rules are included but were not run against the live project.
 
 ## NPC intelligence
 
